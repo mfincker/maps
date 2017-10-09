@@ -51,7 +51,7 @@ files_out <- c(
 
 # Get ACS population estimates
 get_population <- function(region) {
-  v <- jsonlite::fromJSON(api_query[region])
+  v <- jsonlite::fromJSON(api_query[[region]])
   colnames(v) <- v[1, ]
   v <- 
     v %>% 
@@ -81,7 +81,7 @@ get_population <- function(region) {
 get_boundaries <- function(region) {
   
   # Download and unzip US Census Bureau shapefile
-  url <- url_boundaries[region]
+  url <- url_boundaries[[region]]
   dest <- str_c(dir_tmp, region, ".zip")
   if (download.file(url = url, destfile = dest, quiet = TRUE)) {
     stop(str_c("Error: Download for ", region, " failed"))
