@@ -17,7 +17,7 @@ BOUNDARIES_YEAR <- "2016"
   # State FIPS
 STATE_FIPS <- "06"  # California
   # EPSG code for WGS84 coordinate reference system
-epsg_wgs84 <- 4326L
+EPSG_WGS84 <- 4326L
   # Base API query for ACS 5-year population estimates
 api_base <- str_c("https://api.census.gov/data/", ACS_YEAR, "/acs5?get=GEOID,NAME,B03001_001E,B03002_003E,B03001_003E,B03002_006E,B03002_004E")
   # API queries for ACS 5-year population estimates
@@ -94,7 +94,7 @@ get_boundaries <- function(region) {
     rename_all(tolower) %>% 
     filter(statefp == STATE_FIPS) %>% 
     arrange(geoid) %>% 
-    st_transform(crs = epsg_wgs84)
+    st_transform(crs = EPSG_WGS84)
 }
 
 # Create temp directory
