@@ -47,7 +47,7 @@ files_out <- c(
 
 # Group percentage of population
 population_pct <- function(group, total) {
-  as.integer(round(if_else(total == 0, 0, 100 * group / total)))
+  as.integer(round(if_else(total == 0L, 0L, 100 * (group / total))))
 }
 
 # Group with the most population
@@ -72,14 +72,14 @@ get_population <- function(region) {
   v %>% 
     .[-1, ] %>% 
     as_tibble() %>% 
-    mutate_at(vars(starts_with("B03")), as.double) %>%
+    mutate_at(vars(starts_with("B03")), as.integer) %>%
     mutate(
       NAME =
         NAME %>% 
           str_replace(", \\w+$", "") %>% 
           str_replace("[ ]+CCD[ ]*,", ",") %>% 
           str_replace("[ ]*,[ ]*", "\n"),
-      population = as.integer(B03001_001E),
+      population = B03001_001E,
       white_nonhispanic =
         population_pct(group = B03002_003E, total = B03001_001E),
       hispanic = 
