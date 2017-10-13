@@ -24,5 +24,8 @@ geojson: county.geojson county_subdivision.geojson tract.geojson
 county.geojson county_subdivision.geojson tract.geojson: geojson.R
 	Rscript geojson.R
 
+install:
+	# TODO
+
 clean:
 	rm -f *.geojson *.mbtiles
