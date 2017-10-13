@@ -47,7 +47,7 @@ files_out <- c(
 
 # Group percentage of population
 population_pct <- function(group, total) {
-  as.integer(round(if_else(total == 0L, 0L, 100 * (group / total))))
+  as.integer(round(if_else(total == 0L, 0, 100 * (group / total))))
 }
 
 # Group with the most population
