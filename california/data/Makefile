@@ -28,4 +28,4 @@ install:
 	# TODO
 
 clean:
-	rm -f *.geojson *.mbtiles
+	rm -f ./*.geojson ./*.mbtiles
