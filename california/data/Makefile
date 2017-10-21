@@ -5,24 +5,22 @@
 # % make clean        # Remove GeoJSON files and Mapbox tiles
 
 # Author: Bill Behrman
-# Version: 2017-10-13
+# Version: 2017-10-20
 
-GEOJSONS = ca-pop-county.geojson ca-pop-county-subdivision.geojson \
-  ca-pop-tract.geojson
+GEOJSONS = ca-county.geojson ca-county-subdivision.geojson ca-tract.geojson
 
-MBTILES  = ca-pop-county.mbtiles ca-pop-county-subdivision.mbtiles \
-  ca-pop-tract.mbtiles
+MBTILES  = ca-county.mbtiles ca-county-subdivision.mbtiles ca-tract.mbtiles
 
 mbtiles: $(MBTILES)
 
-ca-pop-county.mbtiles: ca-pop-county.geojson Makefile
-	tippecanoe -o $@ -f -z 9 -Z 4 -l $(basename $@) $<
+ca-county.mbtiles: ca-county.geojson Makefile
+	tippecanoe -o $@ -f -z 9 -Z 4 -l county $<
 
-ca-pop-county-subdivision.mbtiles: ca-pop-county-subdivision.geojson Makefile
-	tippecanoe -o $@ -f -z 11 -Z 8 -l $(basename $@) $<
+ca-county-subdivision.mbtiles: ca-county-subdivision.geojson Makefile
+	tippecanoe -o $@ -f -z 11 -Z 8 -l county-subdivision $<
 
-ca-pop-tract.mbtiles: ca-pop-tract.geojson Makefile
-	tippecanoe -o $@ -f -Z 10 -l $(basename $@) $<
+ca-tract.mbtiles: ca-tract.geojson Makefile
+	tippecanoe -o $@ -f -Z 10 -l tract $<
 
 geojson: $(GEOJSONS)
 
