@@ -2,7 +2,7 @@
 # county subdivisions, and census tracts.
 
 # Author: Bill Behrman
-# Version: 2017-10-13
+# Version: 2017-10-20
 
 # Libraries
 library(tidyverse)
@@ -38,9 +38,9 @@ url_boundaries <-  c(
 dir_tmp <- "tmp/"
   # Output files
 files_out <- c(
-  county             = "ca-pop-county.geojson",
-  county_subdivision = "ca-pop-county-subdivision.geojson",
-  tract              = "ca-pop-tract.geojson"
+  county             = "ca-county.geojson",
+  county_subdivision = "ca-county-subdivision.geojson",
+  tract              = "ca-tract.geojson"
 )
 
 #===============================================================================
@@ -141,7 +141,7 @@ for (region in names(files_out)) {
     select(-name) %>% 
     left_join(get_population(region), by = c("affgeoid" = "geoid")) %>% 
     mutate(
-      density = as.integer(round(population / aland * SQ_METER_SQ_MILE))
+      density = population / aland * SQ_METER_SQ_MILE
     ) %>% 
     arrange(geoid) %>% 
     select(name, population, density, white_nonhispanic:largest_group) %>% 
