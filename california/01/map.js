@@ -13,6 +13,7 @@ mapboxgl.accessToken =
 
 const BASE_MAP = {
   'container': 'map',
+  // Moonlight style
   'style': 'mapbox://styles/wbehrman/cj90hkcptjxbf2snw5uf8gg1x',
   'center': [-119.4505, 37.1992],
   'zoom': 5,
