@@ -1,0 +1,331 @@
+---
+title: "Map design"
+author: "Bill Behrman"
+date: 2017-10-20
+output: 
+  github_document:
+    toc: true
+    toc_depth: 6
+---
+
+```{r setup, include=FALSE}
+# knitr options
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+# Libraries
+library(tidyverse)
+library(sf)
+library(stringr)
+
+# Parameters
+  # ACS Year
+ACS_YEAR <- "2015"
+  # Boundaries year
+BOUNDARIES_YEAR <- "2016"
+  # State FIPS
+STATE_FIPS <- "06"  # California
+  # EPSG code for WGS84 coordinate reference system
+EPSG_WGS84 <- 4326L
+  # Number of square meters in a square mile
+SQ_METER_SQ_MILE <- 1609.344 ^ 2
+  # Overall population density of California in 2016
+CA_DENSITY <- 39250017 / (403501101370 / SQ_METER_SQ_MILE)
+  # API query for 2000 census county population and area
+api_county_2000 <- "https://api.census.gov/data/2000/sf1?get=NAME,P001001,AREALAND,AREAWATR&for=county:*"
+  # Base API query for ACS 5-year population estimates
+api_base <- str_c("https://api.census.gov/data/", ACS_YEAR, "/acs5?get=GEOID,NAME,B03001_001E,B03002_003E,B03001_003E,B03002_006E,B03002_004E")
+  # API queries for ACS 5-year population estimates
+api_query <- c(
+  county             = str_c(api_base, "&for=county:*&in=state:", STATE_FIPS),
+  county_subdivision = str_c(api_base, "&for=county+subdivision:*&in=state:", STATE_FIPS),
+  tract              = str_c(api_base, "&for=tract:*&in=state:", STATE_FIPS)
+)
+  # URLs for US Census Bureau boundary shape files
+url_boundaries <-  c(
+  county             = str_c("https://www2.census.gov/geo/tiger/GENZ", BOUNDARIES_YEAR, "/shp/cb_", BOUNDARIES_YEAR, "_us_county_500k.zip"),
+  county_subdivision = str_c("https://www2.census.gov/geo/tiger/GENZ", BOUNDARIES_YEAR, "/shp/cb_", BOUNDARIES_YEAR, "_", STATE_FIPS, "_cousub_500k.zip"),
+  tract              = str_c("https://www2.census.gov/geo/tiger/GENZ", BOUNDARIES_YEAR, "/shp/cb_", BOUNDARIES_YEAR, "_", STATE_FIPS, "_tract_500k.zip")
+)
+  # Temp directory
+dir_tmp <- "tmp/"
+
+#===============================================================================
+
+# Get 2000 census county data
+v <- jsonlite::fromJSON(api_county_2000)
+colnames(v) <- v[1, ]
+county_2000 <- 
+  v %>% 
+  .[-1, ] %>% 
+  as_tibble() %>% 
+  mutate_at(vars(P001001), as.integer) %>% 
+  mutate_at(vars(AREALAND, AREAWATR), as.double) %>% 
+  select(
+    state,
+    county,
+    name       = NAME,
+    population = P001001,
+    area_land  = AREALAND,
+    area_water = AREAWATR
+  )
+  
+# Get ACS population estimates
+get_population <- function(region) {
+  v <- jsonlite::fromJSON(api_query[[region]])
+  colnames(v) <- v[1, ]
+  v %>% 
+    .[-1, ] %>% 
+    as_tibble() %>% 
+    mutate_at(vars(starts_with("B03")), as.integer) %>%
+    mutate(
+      NAME =
+        NAME %>% 
+          str_replace(", \\w+$", "") %>% 
+          str_replace("[ ]+CCD[ ]*,", ",") %>% 
+          str_replace("[ ]*,[ ]*", "\n"),
+      population        = B03001_001E,
+      white_nonhispanic = B03002_003E,
+      hispanic          = B03001_003E,
+      asian_nonhispanic = B03002_006E,
+      black_nonhispanic = B03002_004E,
+      other = population - white_nonhispanic - hispanic -
+                asian_nonhispanic - black_nonhispanic
+    ) %>% 
+    select(geoid = GEOID, name = NAME, population:other) %>% 
+    arrange(geoid)
+}
+
+# Get US Census Bureau boundaries
+get_boundaries <- function(region) {
+  
+  # Download and unzip US Census Bureau shapefile
+  url <- url_boundaries[[region]]
+  dest <- str_c(dir_tmp, region, ".zip")
+  if (download.file(url = url, destfile = dest, quiet = TRUE)) {
+    stop(str_c("Error: Download for ", region, " failed"))
+  }
+  unzip(zipfile = dest, exdir = str_c(dir_tmp, region))
+  
+  # Read shapefile into sf object, filter to state, and convert to WGS84 
+  # coordinate reference system
+  st_read(
+    dsn = str_c(dir_tmp, region),
+    quiet = TRUE,
+    stringsAsFactors = FALSE
+  ) %>%
+    rename_all(tolower) %>% 
+    filter(statefp == STATE_FIPS) %>% 
+    arrange(geoid) %>% 
+    st_transform(crs = EPSG_WGS84)
+}
+
+# Create temp directory
+if (!file.exists(dir_tmp)) {
+  dir.create(dir_tmp, recursive = TRUE)
+}
+
+# Get data for each region
+acs <- 
+  names(api_query) %>% 
+  map_dfr(
+    ~(
+      get_boundaries(.x) %>% 
+        filter(aland > 0) %>%
+        mutate(affgeoid = str_replace(affgeoid, "00US", "US")) %>% 
+        select(-name) %>% 
+        left_join(get_population(.x), by = c("affgeoid" = "geoid")) %>% 
+        as_tibble() %>% 
+        mutate(
+          region = .x,
+          density = population / aland * SQ_METER_SQ_MILE,
+          area_land = aland / SQ_METER_SQ_MILE
+        ) %>% 
+        select(
+          region, 
+          geoid, 
+          name, 
+          population, 
+          area_land,
+          density, 
+          white_nonhispanic:other,
+          -geometry
+        ) %>% 
+        arrange(geoid)
+    )
+  )
+
+# Remove temporary directory
+if (unlink(dir_tmp, recursive = TRUE, force = TRUE)) {
+  print("Error: Remove temporary directory failed")
+}
+```
+
+# Brewer 2000 US population density
+
+## Average density
+
+```{r}
+county_2000 %>% 
+  summarize_at(vars(population, area_land, area_water), sum) %>% 
+  transmute(
+    density_land  = population / area_land * SQ_METER_SQ_MILE,
+    density_total = population / (area_land + area_water) * SQ_METER_SQ_MILE
+  )
+```
+
+Brewer used land area.
+
+## Bins
+
+```{r}
+county_2000 <- 
+  county_2000 %>% 
+  mutate(density = population / area_land * SQ_METER_SQ_MILE)
+
+brewer_breaks <- c(0, 1, 7, 30, 79.6, 160, 300, 2000, max(county_2000$density))
+
+county_2000 <- 
+  county_2000 %>% 
+  mutate(
+    bin = cut(
+      density,
+      breaks = brewer_breaks,
+      include.lowest = TRUE,
+      right = FALSE,
+      ordered_result = TRUE
+    )
+  )
+
+v <- 
+  county_2000 %>% 
+  group_by(bin) %>% 
+  summarize(
+    n = n(),
+    area = sum(area_land) / SQ_METER_SQ_MILE
+  )
+
+v %>% 
+  ggplot(aes(bin, n)) + 
+  geom_col() +
+  labs(x = "Density", y = "Number of counties")
+
+v %>% 
+  ggplot(aes(bin, area)) + 
+  geom_col() +
+  labs(x = "Density", y = "Area of counties")
+```
+
+# Bostock 2014 California population density
+
+Bins used for [map](https://bl.ocks.org/mbostock/670b9fe0577a29c39a1803f59c628769).
+
+```{r}
+v1 <- 
+  acs %>%
+  filter(region == "tract")
+
+bostock_breaks <- c(0, 1, 10, 50, 200, 500, 1000, 2000, 4000, max(v1$density))
+
+v2 <- 
+  v1 %>% 
+  mutate(
+    bin = cut(
+      density,
+      breaks = bostock_breaks,
+      include.lowest = TRUE,
+      right = FALSE,
+      ordered_result = TRUE
+    )
+  ) %>% 
+  group_by(bin) %>% 
+  summarize(
+    n = n(),
+    area = sum(area_land) / SQ_METER_SQ_MILE
+  )
+
+v2 %>% 
+  ggplot(aes(bin, n)) + 
+  geom_col() +
+  labs(x = "Density", y = "Number of tracts")
+
+v2 %>% 
+  ggplot(aes(bin, area)) + 
+  geom_col() +
+  labs(x = "Density", y = "Area of tracts")
+```
+
+# Equal area breaks
+
+```{r}
+acs %>%
+  filter(region == "tract", density < CA_DENSITY) %>% 
+  arrange(density) %>% 
+  mutate(cum_area = cumsum(area_land) / sum(area_land)) %>% 
+  select(density, cum_area) %>% 
+  filter(
+    near(cum_area, 0.25, 0.01) |
+    near(cum_area, 0.50, 0.01) |
+    near(cum_area, 0.75, 0.01)
+  )
+
+acs %>% 
+  filter(region == "tract", density >= CA_DENSITY) %>% 
+  arrange(density) %>% 
+  mutate(cum_area = cumsum(area_land) / sum(area_land)) %>% 
+  select(density, cum_area) %>% 
+  filter(
+    near(cum_area, 0.25, 0.001) |
+    near(cum_area, 0.50, 0.001) |
+    near(cum_area, 0.75, 0.001)
+  )
+```
+
+```{r}
+break_areas <- function(df, breaks) {
+  df %>% 
+    mutate(
+    bin = cut(
+      density,
+      breaks = breaks,
+      include.lowest = TRUE,
+      right = FALSE,
+      ordered_result = TRUE
+    )
+  ) %>% 
+  group_by(bin) %>% 
+  summarize(
+    n = n(),
+    area = sum(area_land) / SQ_METER_SQ_MILE
+  ) %>% 
+  ggplot(aes(bin, area)) + 
+  geom_col() +
+  labs(x = "Density", y = "Area of tracts")
+}
+
+c(0, 1.51, 4.76, 15, CA_DENSITY, 551, 1410, 4240.5, max(v1$density)) %>% 
+  break_areas(v1, .)
+
+c(0, 2, 5, 15, CA_DENSITY, 500, 1500, 4000, max(v1$density)) %>% 
+  break_areas(v1, .)
+```
+
+# Average density divide
+
+```{r}
+CA_DENSITY
+
+acs %>%
+  filter(region == "tract") %>% 
+  arrange(density) %>% 
+  mutate(
+    cum_area = cumsum(area_land) / sum(area_land),
+    cum_population = cumsum(population) / sum(population)
+  ) %>% 
+  filter(near(density, CA_DENSITY, 1)) %>%
+  select(density, cum_area, cum_population)
+```
+
+California tracts below the average population density account for almost 93% of the land area but less than 7% of the population.
+
