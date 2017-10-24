@@ -19,31 +19,28 @@ const BASE_MAP = {
   'zoom': 5,
 };
 
-const SOURCES = [
-  {
-    'id': 'county',
-    'source': {
-      'type': 'vector',
-      'url': 'mapbox://wbehrman.4cwlzwkx',
-    },
-  },
-  {
-    'id': 'county-subdivision',
-    'source': {
-      'type': 'vector',
-      'url': 'mapbox://wbehrman.6xx2hlmh',
-    },
-  },
-  {
-    'id': 'tract',
-    'source': {
-      'type': 'vector',
-      'url': 'mapbox://wbehrman.c3t70djq',
-    },
-  },
-];
+const REGIONS = ['county', 'county-subdivision', 'tract'];
 
-const FILL_OPACITY = 0.75;
+const SOURCE_URL = {
+  'county': 'mapbox://wbehrman.4cwlzwkx',
+  'county-subdivision': 'mapbox://wbehrman.6xx2hlmh',
+  'tract': 'mapbox://wbehrman.c3t70djq'
+};
+const SOURCES = REGIONS.map(
+  region => ({
+    'id': region,
+    'source': {
+      'type': 'vector',
+      'url': SOURCE_URL[region],
+    },
+  })
+);
+
+const ZOOM = {
+  'county': {'min': 0, 'max': 8},
+  'county-subdivision': {'min': 8, 'max': 11},
+  'tract': {'min': 11, 'max': 23},
+};
 // 2016 California population density (people / square mile)
 const CA_DENSITY = 251.9375;
 // Population density colors, Brewer YlGnBu
@@ -57,62 +54,28 @@ const STOPS_DENSITY = [
   [1500, '#225ea8'],
   [4000, '#0c2c84'],
 ];
-const FILL_COLOR_DENSITY = {
-  'property': 'density',
-  'stops': STOPS_DENSITY,
-};
-const FILL_OUTLINE_COLOR = '#bfbfbf';
-// Add new layer above this layer
-const BEFORE = 'waterway-label';
-
-const LAYERS = [
-  {
-    'layer': {
-      'id': 'county-density',
-      'type': 'fill',
-      'source': 'county',
-      'source-layer': 'county',
-      'maxzoom': 8,
-      'paint': {
-        'fill-opacity': FILL_OPACITY,
-        'fill-color': FILL_COLOR_DENSITY,
-        'fill-outline-color': FILL_OUTLINE_COLOR,
-      },
-    },
-    'before': BEFORE,
-  },
-  {
-    'layer': {
-      'id': 'county-subdivision-density',
-      'type': 'fill',
-      'source': 'county-subdivision',
-      'source-layer': 'county-subdivision',
-      'minzoom': 8,
-      'maxzoom': 11,
-      'paint': {
-        'fill-opacity': FILL_OPACITY,
-        'fill-color': FILL_COLOR_DENSITY,
-        'fill-outline-color': FILL_OUTLINE_COLOR,
-      },
-    },
-    'before': BEFORE,
-  },
-  {
-    'layer': {
-      'id': 'tract-density',
-      'type': 'fill',
-      'source': 'tract',
-      'source-layer': 'tract',
-      'minzoom': 11,
-      'paint': {
-        'fill-opacity': FILL_OPACITY,
-        'fill-color': FILL_COLOR_DENSITY,
-        'fill-outline-color': FILL_OUTLINE_COLOR,
-      },
-    },
-    'before': BEFORE,
-  },
-];
+const LAYERS = REGIONS.map(
+  region => ({
+   'layer': {
+     'id': region + '-density',
+     'type': 'fill',
+     'source': region,
+     'source-layer': region,
+     'minzoom': ZOOM[region].min,
+     'maxzoom': ZOOM[region].max,
+     'paint': {
+       'fill-opacity': 0.75,
+       'fill-color': {
+         'property': 'density',
+         'stops': STOPS_DENSITY,
+       },
+       'fill-outline-color': '#bfbfbf',
+     },
+   },
+   // Add new layer above this layer
+   'before': 'waterway-label',
+  })
+);
 
 //==============================================================================
 
