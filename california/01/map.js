@@ -2,7 +2,7 @@
  * and tracts
  *
  * Author: Bill Behrman
- * Version: 2017-10-20
+ * Version: 2017-10-23
  */
 
 // Substitute your Mapbox access token
@@ -117,7 +117,7 @@ const LAYERS = [
 //==============================================================================
 
 // Initialize map
-let map = new mapboxgl.Map(BASE_MAP);
+const map = new mapboxgl.Map(BASE_MAP);
 
 map.on('load', function() {
   // Add sources and layers
