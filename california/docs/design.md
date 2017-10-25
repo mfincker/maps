@@ -1,7 +1,7 @@
 Map design
 ================
 Bill Behrman
-2017-10-20
+2017-10-25
 
 -   [Brewer 2000 US population density](#brewer-2000-us-population-density)
     -   [Average density](#average-density)
@@ -9,6 +9,7 @@ Bill Behrman
 -   [Bostock 2014 California population density](#bostock-2014-california-population-density)
 -   [Equal area breaks](#equal-area-breaks)
 -   [Average density divide](#average-density-divide)
+-   [Race and ethnicty bins](#race-and-ethnicty-bins)
 
 ``` r
 # Libraries
@@ -67,6 +68,31 @@ county_2000 <-
     area_land  = AREALAND,
     area_water = AREAWATR
   )
+
+# Group percentage of total
+group_pct <- function(group, total) {
+  as.integer(round(if_else(total == 0L, 0, 100 * (group / total))))
+}
+
+# Largest group
+largest_group <- function(
+  white_nonhispanic, hispanic, asian_nonhispanic, black_nonhispanic, other
+) {
+  if (all(white_nonhispanic == 0L, hispanic == 0L, asian_nonhispanic == 0L,
+          black_nonhispanic == 0L, other == 0L)) {
+    "uninhabited"
+  } else {
+    c(
+      white_nonhispanic = white_nonhispanic,
+      hispanic          = hispanic,
+      asian_nonhispanic = asian_nonhispanic,
+      black_nonhispanic = black_nonhispanic,
+      other             = other
+    ) %>% 
+      which.max(.) %>%
+      names()
+  }
+}
   
 # Get ACS population estimates
 get_population <- function(region) {
@@ -88,9 +114,29 @@ get_population <- function(region) {
       asian_nonhispanic = B03002_006E,
       black_nonhispanic = B03002_004E,
       other = population - white_nonhispanic - hispanic -
-                asian_nonhispanic - black_nonhispanic
+                asian_nonhispanic - black_nonhispanic,
+      white_pct    = group_pct(group = B03002_003E, total = B03001_001E),
+      hispanic_pct = group_pct(group = B03001_003E, total = B03001_001E),
+      asian_pct    = group_pct(group = B03002_006E, total = B03001_001E),
+      black_pct    = group_pct(group = B03002_004E, total = B03001_001E),
+      other_pct =
+        if_else(population == 0L, 0L,
+                pmax(0L, 100L - white_pct - hispanic_pct -
+                     asian_pct - black_pct)),
+      largest_group =
+        list(
+          white_nonhispanic = B03002_003E,
+          hispanic          = B03001_003E,
+          asian_nonhispanic = B03002_006E,
+          black_nonhispanic = B03002_004E,
+          other             = B03001_001E - B03002_003E - B03001_003E -
+                                B03002_006E - B03002_004E
+        ) %>%
+        pmap_chr(largest_group),
+      largest_pct =
+        pmax(white_pct, hispanic_pct, asian_pct, black_pct, other_pct)
     ) %>% 
-    select(geoid = GEOID, name = NAME, population:other) %>% 
+    select(geoid = GEOID, name = NAME, population:largest_pct) %>% 
     arrange(geoid)
 }
 
@@ -146,7 +192,7 @@ acs <-
           population, 
           area_land,
           density, 
-          white_nonhispanic:other,
+          white_nonhispanic:largest_pct,
           -geometry
         ) %>% 
         arrange(geoid)
@@ -217,7 +263,7 @@ v %>%
   labs(x = "Density", y = "Number of counties")
 ```
 
-![](design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-3-1.png)
+<img src="design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-3-1.png" width="100%" />
 
 ``` r
 v %>% 
@@ -226,7 +272,7 @@ v %>%
   labs(x = "Density", y = "Area of counties")
 ```
 
-![](design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-3-2.png)
+<img src="design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-3-2.png" width="100%" />
 
 Bostock 2014 California population density
 ==========================================
@@ -263,7 +309,7 @@ v2 %>%
   labs(x = "Density", y = "Number of tracts")
 ```
 
-![](design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-4-1.png)
+<img src="design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-4-1.png" width="100%" />
 
 ``` r
 v2 %>% 
@@ -272,7 +318,7 @@ v2 %>%
   labs(x = "Density", y = "Area of tracts")
 ```
 
-![](design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-4-2.png)
+<img src="design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-4-2.png" width="100%" />
 
 Equal area breaks
 =================
@@ -334,17 +380,18 @@ acs %>%
     ## # ... with 17 more rows
 
 ``` r
-break_areas <- function(df, breaks) {
+break_areas <- function(breaks, df, var) {
+  bin_var <- enquo(var)
   df %>% 
     mutate(
-    bin = cut(
-      density,
-      breaks = breaks,
-      include.lowest = TRUE,
-      right = FALSE,
-      ordered_result = TRUE
-    )
-  ) %>% 
+      bin = cut(
+        !!(bin_var),
+        breaks = breaks,
+        include.lowest = TRUE,
+        right = FALSE,
+        ordered_result = TRUE
+      )
+    ) %>% 
   group_by(bin) %>% 
   summarize(
     n = n(),
@@ -352,21 +399,21 @@ break_areas <- function(df, breaks) {
   ) %>% 
   ggplot(aes(bin, area)) + 
   geom_col() +
-  labs(x = "Density", y = "Area of tracts")
+  labs(y = "Area of tracts")
 }
 
 c(0, 1.51, 4.76, 15, CA_DENSITY, 551, 1410, 4240.5, max(v1$density)) %>% 
-  break_areas(v1, .)
+  break_areas(v1, density)
 ```
 
-![](design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-6-1.png)
+<img src="design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-6-1.png" width="100%" />
 
 ``` r
 c(0, 2, 5, 15, CA_DENSITY, 500, 1500, 4000, max(v1$density)) %>% 
-  break_areas(v1, .)
+  break_areas(v1, density)
 ```
 
-![](design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-6-2.png)
+<img src="design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-6-2.png" width="100%" />
 
 Average density divide
 ======================
@@ -398,3 +445,79 @@ acs %>%
     ## 4 252.5699 0.9278050     0.07060920
 
 California tracts below the average population density account for almost 93% of the land area but less than 7% of the population.
+
+Race and ethnicty bins
+======================
+
+``` r
+v1 %>% 
+  filter(largest_pct > 0) %>% 
+  pull(largest_pct) %>% 
+  summary()
+```
+
+    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    ##   23.00   50.00   62.00   62.78   75.00  100.00
+
+``` r
+v1 %>% 
+  filter(largest_pct > 0) %>%
+  filter(largest_pct == min(largest_pct)) %>% 
+  mutate(name = stringr::str_replace(name, "\\n", " ")) %>% 
+  knitr::kable()
+```
+
+| region | geoid       | name                                 |  population|  area\_land|   density|  white\_nonhispanic|  hispanic|  asian\_nonhispanic|  black\_nonhispanic|  other|  white\_pct|  hispanic\_pct|  asian\_pct|  black\_pct|  other\_pct| largest\_group     |  largest\_pct|
+|:-------|:------------|:-------------------------------------|-----------:|-----------:|---------:|-------------------:|---------:|-------------------:|-------------------:|------:|-----------:|--------------:|-----------:|-----------:|-----------:|:-------------------|-------------:|
+| tract  | 06037572400 | Census Tract 5724 Los Angeles County |        1218|   0.1801224|  6762.067|                 143|       276|                 276|                 280|    243|          12|             23|          23|          23|          19| black\_nonhispanic |            23|
+
+``` r
+v1 %>% 
+  filter(largest_pct > 0) %>% 
+  group_by(largest_group) %>% 
+  summarize_at(vars(largest_pct), funs(min, median, mean, max))
+```
+
+    ## # A tibble: 5 x 5
+    ##       largest_group   min median     mean   max
+    ##               <chr> <dbl>  <dbl>    <dbl> <dbl>
+    ## 1 asian_nonhispanic    26     50 51.95315    91
+    ## 2 black_nonhispanic    23     49 51.67910    89
+    ## 3          hispanic    24     64 65.27973   100
+    ## 4             other    46     50 59.66667    83
+    ## 5 white_nonhispanic    26     63 63.03070   100
+
+``` r
+seq(0L, 100L, 10L) %>% 
+  break_areas(v1, largest_pct)
+```
+
+<img src="design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-8-1.png" width="100%" />
+
+``` r
+seq(0L, 100L, 20L) %>% 
+  break_areas(v1, largest_pct)
+```
+
+<img src="design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-8-2.png" width="100%" />
+
+``` r
+v1 %>% 
+  mutate(
+    bin = cut(
+      largest_pct,
+      breaks = seq(0L, 100L, 20L),
+      include.lowest = TRUE,
+      right = FALSE,
+      ordered_result = TRUE
+    )
+  ) %>%
+  group_by(largest_group, bin) %>% 
+  summarize(area = sum(area_land) / SQ_METER_SQ_MILE) %>% 
+  ungroup() %>% 
+  ggplot(aes(bin, area)) +
+  geom_col() +
+  facet_grid(largest_group ~ .)
+```
+
+<img src="design_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-8-3.png" width="100%" />
