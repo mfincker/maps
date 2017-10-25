@@ -2,7 +2,7 @@
 # county subdivisions, and census tracts.
 
 # Author: Bill Behrman
-# Version: 2017-10-20
+# Version: 2017-10-25
 
 # Libraries
 library(tidyverse)
@@ -102,9 +102,12 @@ get_population <- function(region) {
           other             = B03001_001E - B03002_003E - B03001_003E -
                                 B03002_006E - B03002_004E
         ) %>%
-        pmap_chr(largest_group)
+        pmap_chr(largest_group),
+      largest_pct =
+        pmax(white_nonhispanic, hispanic, asian_nonhispanic, black_nonhispanic,
+             other)
     ) %>% 
-    select(geoid = GEOID, name = NAME, population:largest_group) %>% 
+    select(geoid = GEOID, name = NAME, population:largest_pct) %>% 
     arrange(geoid)
 }
 
@@ -144,7 +147,7 @@ for (region in names(files_out)) {
       density = population / aland * SQ_METER_SQ_MILE
     ) %>% 
     arrange(geoid) %>% 
-    select(name, population, density, white_nonhispanic:largest_group) %>% 
+    select(name, population, density, white_nonhispanic:largest_pct) %>% 
     st_write(dsn = files_out[[region]], delete_dsn = TRUE)
 }
 
