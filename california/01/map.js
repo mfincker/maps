@@ -36,6 +36,7 @@ const SOURCES = REGIONS.map(
   })
 );
 
+// Zoom levels layers are visible
 const ZOOM = {
   'county': {'min': 0, 'max': 8},
   'county-subdivision': {'min': 8, 'max': 11},
