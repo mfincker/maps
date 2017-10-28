@@ -2,7 +2,7 @@
  * and tracts
  *
  * Author: Bill Behrman
- * Version: 2017-10-25
+ * Version: 2017-10-27
  */
 
 // Substitute your Mapbox access token
