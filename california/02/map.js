@@ -145,6 +145,6 @@ const map = new mapboxgl.Map(BASE_MAP);
 
 map.on('load', function() {
   // Add sources and layers
-  SOURCES.forEach(source => map.addSource(source.level, source.source));
+  SOURCES.forEach(source => map.addSource(source.id, source.source));
   LAYERS.forEach(layer => map.addLayer(layer.layer, layer.before));
 });
