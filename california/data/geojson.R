@@ -2,7 +2,7 @@
 # county subdivisions, and census tracts.
 
 # Author: Bill Behrman
-# Version: 2017-10-25
+# Version: 2017-10-31
 
 # Libraries
 library(tidyverse)
@@ -146,8 +146,8 @@ for (region in names(files_out)) {
     mutate(
       density = population / aland * SQ_METER_SQ_MILE
     ) %>% 
+    select(geoid, name, population, density, white_nonhispanic:largest_pct) %>%
     arrange(geoid) %>% 
-    select(name, population, density, white_nonhispanic:largest_pct) %>% 
     st_write(dsn = files_out[[region]], delete_dsn = TRUE)
 }
 
