@@ -57,24 +57,24 @@ const STOPS_DENSITY = [
 ];
 const LAYERS = REGIONS.map(
   region => ({
-   'layer': {
-     'id': region + '-density',
-     'type': 'fill',
-     'source': region,
-     'source-layer': region,
-     'minzoom': ZOOM[region].min,
-     'maxzoom': ZOOM[region].max,
-     'paint': {
-       'fill-opacity': 0.75,
-       'fill-color': {
-         'property': 'density',
-         'stops': STOPS_DENSITY,
-       },
-       'fill-outline-color': '#bfbfbf',
-     },
-   },
-   // Add new layer above this layer
-   'before': 'waterway-label',
+    'layer': {
+      'id': region + '-density',
+      'type': 'fill',
+      'source': region,
+      'source-layer': region,
+      'minzoom': ZOOM[region].min,
+      'maxzoom': ZOOM[region].max,
+      'paint': {
+        'fill-opacity': 0.75,
+        'fill-color': {
+          'property': 'density',
+          'stops': STOPS_DENSITY,
+        },
+        'fill-outline-color': '#bfbfbf',
+      },
+    },
+    // Add new layer above this layer
+    'before': 'waterway-label',
   })
 );
 

@@ -120,21 +120,21 @@ const FILL_COLOR_RACE = [
 
 const LAYERS = REGIONS.map(
   region => ({
-   'layer': {
-     'id': region + '-race',
-     'type': 'fill',
-     'source': region,
-     'source-layer': region,
-     'minzoom': ZOOM[region].min,
-     'maxzoom': ZOOM[region].max,
-     'paint': {
-       'fill-opacity': 0.75,
-       'fill-color': FILL_COLOR_RACE,
-       'fill-outline-color': '#bfbfbf',
-     },
-   },
-   // Add new layer above this layer
-   'before': 'waterway-label',
+    'layer': {
+      'id': region + '-race',
+      'type': 'fill',
+      'source': region,
+      'source-layer': region,
+      'minzoom': ZOOM[region].min,
+      'maxzoom': ZOOM[region].max,
+      'paint': {
+        'fill-opacity': 0.75,
+        'fill-color': FILL_COLOR_RACE,
+        'fill-outline-color': '#bfbfbf',
+      },
+    },
+    // Add new layer above this layer
+    'before': 'waterway-label',
   })
 );
 
