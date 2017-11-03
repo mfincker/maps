@@ -1,0 +1,36 @@
+body {
+  margin: 0;
+  padding: 0;
+}
+
+#map {
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+/* Layer selector */
+
+#overlay {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 3px;
+  box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.1);
+  color: #000;
+  font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  margin: 10px;
+  padding: 10px;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+#overlay fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+#overlay legend {
+  font-weight: bold;
+  margin: 0 0 5px;
+}
