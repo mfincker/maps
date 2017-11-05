@@ -193,7 +193,6 @@ map.on('load', () => {
 });
 
 // Add layer selector
-
 document.getElementById('select-layer').addEventListener('change', e => {
   LAYERS_FILL.forEach(layer => {
     map.setPaintProperty(
