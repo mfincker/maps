@@ -151,7 +151,7 @@ const LAYERS_FILL = REGIONS.map(
       'maxzoom': ZOOM[region].max,
       'paint': {
         'fill-opacity': 0.75,
-        'fill-color': FILL_COLOR['density'],
+        'fill-color': FILL_COLOR.density,
         'fill-outline-color': '#bfbfbf',
       },
     },
@@ -193,12 +193,13 @@ map.on('load', () => {
 });
 
 // Add layer selector
-document.getElementById('select-layer').addEventListener('change', e => {
+const select = document.getElementById('select-layer');
+select.addEventListener('change', () => {
   LAYERS_FILL.forEach(layer => {
     map.setPaintProperty(
       layer.layer.id,
       'fill-color',
-      FILL_COLOR[e.path[0].value]
+      FILL_COLOR[select.value]
     );
   });
 });
