@@ -209,10 +209,13 @@ LAYERS_FILL.forEach(layer => {
   map.on('mousemove', layer.layer.id, e => {
     map.setFilter(
       layer.layer.id.replace('-fill', '-line'),
-      geoidFilter(e.features[0].properties.geoid)
+      geoidFilter(
+        map.queryRenderedFeatures(e.point, {'layers': [layer.layer.id],})[0]
+          .properties.geoid
+      )
     );
   });
-  map.on('mouseleave', layer.layer.id, e => {
+  map.on('mouseleave', layer.layer.id, () => {
     map.setFilter(layer.layer.id.replace('-fill', '-line'), geoidFilter(''));
   });
 });
