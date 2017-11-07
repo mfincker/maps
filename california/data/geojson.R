@@ -2,7 +2,7 @@
 # county subdivisions, and census tracts.
 
 # Author: Bill Behrman
-# Version: 2017-10-31
+# Version: 2017-11-06
 
 # Libraries
 library(tidyverse)
@@ -54,8 +54,8 @@ group_pct <- function(group, total) {
 largest_group <- function(
   white_nonhispanic, hispanic, asian_nonhispanic, black_nonhispanic, other
 ) {
-  if (all(white_nonhispanic == 0L, hispanic == 0L, asian_nonhispanic == 0L,
-          black_nonhispanic == 0L, other == 0L)) {
+  if (white_nonhispanic == 0L && hispanic == 0L && asian_nonhispanic == 0L &&
+      black_nonhispanic == 0L && other == 0L) {
     "uninhabited"
   } else {
     c(
