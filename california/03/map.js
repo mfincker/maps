@@ -159,7 +159,7 @@ const LAYERS_FILL = REGIONS.map(
   })
 );
 
-let geoidFilter = geoid => ['==', ['string', ['get', 'geoid']], geoid];
+const geoidFilter = geoid => ['==', ['string', ['get', 'geoid']], geoid];
 const LAYERS_LINE = REGIONS.map(
   region => ({
     'layer': {
