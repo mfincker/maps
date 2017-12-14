@@ -2,7 +2,7 @@
  * and tracts
  *
  * Author: Bill Behrman
- * Version: 2017-11-02
+ * Version: 2017-12-13
  */
 
 // Substitute your Mapbox access token
@@ -22,9 +22,9 @@ const BASE_MAP = {
 const REGIONS = ['county', 'county-subdivision', 'tract'];
 
 const SOURCE_URL = {
-  'county': 'mapbox://wbehrman.3w1lbl9g',
-  'county-subdivision': 'mapbox://wbehrman.89zcvjmw',
-  'tract': 'mapbox://wbehrman.bnvx2v62'
+  'county': 'mapbox://wbehrman.9qe09ixj',
+  'county-subdivision': 'mapbox://wbehrman.32nll4u7',
+  'tract': 'mapbox://wbehrman.8uf324tu'
 };
 const SOURCES = REGIONS.map(
   region => ({

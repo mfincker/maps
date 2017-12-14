@@ -2,7 +2,7 @@
 # county subdivisions, and census tracts.
 
 # Author: Bill Behrman
-# Version: 2017-11-06
+# Version: 2017-12-13
 
 # Libraries
 library(tidyverse)
@@ -11,7 +11,7 @@ library(stringr)
 
 # Parameters
   # ACS Year
-ACS_YEAR <- "2015"
+ACS_YEAR <- "2016"
   # Boundaries year
 BOUNDARIES_YEAR <- "2016"
   # State FIPS
@@ -21,7 +21,7 @@ EPSG_WGS84 <- 4326L
   # Number of square meters in a square mile
 SQ_METER_SQ_MILE <- 1609.344 ^ 2
   # Base API query for ACS 5-year population estimates
-api_base <- str_c("https://api.census.gov/data/", ACS_YEAR, "/acs5?get=GEOID,NAME,B03001_001E,B03002_003E,B03001_003E,B03002_006E,B03002_004E")
+api_base <- str_c("https://api.census.gov/data/", ACS_YEAR, "/acs/acs5?get=GEO_ID,NAME,B03001_001E,B03002_003E,B03001_003E,B03002_006E,B03002_004E")
   # API queries for ACS 5-year population estimates
 api_query <- c(
   county             = str_c(api_base, "&for=county:*&in=state:", STATE_FIPS),
@@ -34,8 +34,8 @@ url_boundaries <-  c(
   county_subdivision = str_c("https://www2.census.gov/geo/tiger/GENZ", BOUNDARIES_YEAR, "/shp/cb_", BOUNDARIES_YEAR, "_", STATE_FIPS, "_cousub_500k.zip"),
   tract              = str_c("https://www2.census.gov/geo/tiger/GENZ", BOUNDARIES_YEAR, "/shp/cb_", BOUNDARIES_YEAR, "_", STATE_FIPS, "_tract_500k.zip")
 )
-  # Temp directory
-dir_tmp <- "tmp/"
+  # Temporary directory
+dir_tmp <- str_c("/tmp/", Sys.time() %>% as.integer(), "/")
   # Output files
 files_out <- c(
   county             = "ca-county.geojson",
@@ -107,7 +107,7 @@ get_population <- function(region) {
         pmax(white_nonhispanic, hispanic, asian_nonhispanic, black_nonhispanic,
              other)
     ) %>% 
-    select(geoid = GEOID, name = NAME, population:largest_pct) %>% 
+    select(geoid = GEO_ID, name = NAME, population:largest_pct) %>% 
     arrange(geoid)
 }
 
@@ -140,7 +140,6 @@ if (!file.exists(dir_tmp)) {
 for (region in names(files_out)) {
   get_boundaries(region) %>% 
     filter(aland > 0) %>%
-    mutate(affgeoid = str_replace(affgeoid, "00US", "US")) %>% 
     select(-name) %>% 
     left_join(get_population(region), by = c("affgeoid" = "geoid")) %>% 
     mutate(
