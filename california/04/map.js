@@ -246,6 +246,7 @@ LAYERS_FILL.forEach(layer => {
 
 // Format tooltip text
 function format_tooltip(feature) {
+  console.log(feature.properties)
   const name = '<h1>' + feature.properties.name + '</h1>'
   return '<div class="tooltip">' + name + '</div'
 }
